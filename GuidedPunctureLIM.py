@@ -47,106 +47,142 @@ class GuidedPunctureLIMWidget(ScriptedLoadableModuleWidget):
     parametersFormLayout = qt.QFormLayout(transformsCollapsibleButton)
     
     # ReferenceToTracker transform selector
-    self.referenceToTrackerSelector = slicer.qMRMLNodeComboBox()
-    self.referenceToTrackerSelector.nodeTypes = ( ("vtkMRMLLinearTransformNode"), "" )
-    self.referenceToTrackerSelector.selectNodeUponCreation = True
-    self.referenceToTrackerSelector.addEnabled = False
-    self.referenceToTrackerSelector.removeEnabled = False
-    self.referenceToTrackerSelector.noneEnabled = False
-    self.referenceToTrackerSelector.showHidden = False
-    self.referenceToTrackerSelector.showChildNodeTypes = False
-    self.referenceToTrackerSelector.setMRMLScene( slicer.mrmlScene )
-    self.referenceToTrackerSelector.setToolTip( "Pick the ReferenceToTracker transform." )
-    parametersFormLayout.addRow("ReferenceToTracker transform: ", self.referenceToTrackerSelector)
+    self.referenceToTrackerTransformMatrix = vtk.vtkMatrix4x4()
+    self.referenceToTrackerTransformMatrix.SetElement( 0, 0, 1 ) # Row 1
+    self.referenceToTrackerTransformMatrix.SetElement( 0, 1, 0 )
+    self.referenceToTrackerTransformMatrix.SetElement( 0, 2, 0 )
+    self.referenceToTrackerTransformMatrix.SetElement( 0, 3, 0 )      
+    self.referenceToTrackerTransformMatrix.SetElement( 1, 0, 0 )  # Row 2
+    self.referenceToTrackerTransformMatrix.SetElement( 1, 1, 1 )
+    self.referenceToTrackerTransformMatrix.SetElement( 1, 2, 0 )
+    self.referenceToTrackerTransformMatrix.SetElement( 1, 3, 0 )       
+    self.referenceToTrackerTransformMatrix.SetElement( 2, 0, 0 )  # Row 3
+    self.referenceToTrackerTransformMatrix.SetElement( 2, 1, 0 )
+    self.referenceToTrackerTransformMatrix.SetElement( 2, 2, 1 )
+    self.referenceToTrackerTransformMatrix.SetElement( 2, 3, 1000 )
+    self.referenceToTrackerTransform=slicer.vtkMRMLLinearTransformNode()
+    self.referenceToTrackerTransform.SetName("referenceToTrackerTransform")
+    self.referenceToTrackerTransform.SetMatrixTransformToParent(self.referenceToTrackerTransformMatrix)
+    slicer.mrmlScene.AddNode(self.referenceToTrackerTransform)
     
     # TrackerToReference transform selector
-    self.trackerToReferenceSelector = slicer.qMRMLNodeComboBox()
-    self.trackerToReferenceSelector.nodeTypes = ( ("vtkMRMLLinearTransformNode"), "" )
-    self.trackerToReferenceSelector.selectNodeUponCreation = True
-    self.trackerToReferenceSelector.addEnabled = False
-    self.trackerToReferenceSelector.removeEnabled = False
-    self.trackerToReferenceSelector.noneEnabled = False
-    self.trackerToReferenceSelector.showHidden = False
-    self.trackerToReferenceSelector.showChildNodeTypes = False
-    self.trackerToReferenceSelector.setMRMLScene( slicer.mrmlScene )
-    self.trackerToReferenceSelector.setToolTip( "Pick the TrackerToReference transform." )
-    parametersFormLayout.addRow("TrackerToReference transform: ", self.trackerToReferenceSelector)
+    self.trackerToReferenceTransformMatrix = vtk.vtkMatrix4x4()
+    self.trackerToReferenceTransformMatrix.SetElement( 0, 0, 1 ) # Row 1
+    self.trackerToReferenceTransformMatrix.SetElement( 0, 1, 0 )
+    self.trackerToReferenceTransformMatrix.SetElement( 0, 2, 0 )
+    self.trackerToReferenceTransformMatrix.SetElement( 0, 3, 0 )      
+    self.trackerToReferenceTransformMatrix.SetElement( 1, 0, 0 )  # Row 2
+    self.trackerToReferenceTransformMatrix.SetElement( 1, 1, 1 )
+    self.trackerToReferenceTransformMatrix.SetElement( 1, 2, 0 )
+    self.trackerToReferenceTransformMatrix.SetElement( 1, 3, 0 )       
+    self.trackerToReferenceTransformMatrix.SetElement( 2, 0, 0 )  # Row 3
+    self.trackerToReferenceTransformMatrix.SetElement( 2, 1, 0 )
+    self.trackerToReferenceTransformMatrix.SetElement( 2, 2, 1 )
+    self.trackerToReferenceTransformMatrix.SetElement( 2, 3, 0 )
+    self.trackerToReferenceTransform=slicer.vtkMRMLLinearTransformNode()
+    self.trackerToReferenceTransform.SetName("trackerToReferenceTransform")
+    self.trackerToReferenceTransform.SetMatrixTransformToParent(self.trackerToReferenceTransformMatrix)
+    slicer.mrmlScene.AddNode(self.trackerToReferenceTransform)
 
     # PointerToTracker transform selector
-    self.pointerToTrackerSelector = slicer.qMRMLNodeComboBox()
-    self.pointerToTrackerSelector.nodeTypes = ( ("vtkMRMLLinearTransformNode"), "" )
-    self.pointerToTrackerSelector.selectNodeUponCreation = True
-    self.pointerToTrackerSelector.addEnabled = False
-    self.pointerToTrackerSelector.removeEnabled = False
-    self.pointerToTrackerSelector.noneEnabled = False
-    self.pointerToTrackerSelector.showHidden = False
-    self.pointerToTrackerSelector.showChildNodeTypes = False
-    self.pointerToTrackerSelector.setMRMLScene( slicer.mrmlScene )
-    self.pointerToTrackerSelector.setToolTip( "Pick the PointerToTracker transform." )
-    parametersFormLayout.addRow("PointerToTracker transform: ", self.pointerToTrackerSelector)
+    self.pointerToTrackerTransformMatrix = vtk.vtkMatrix4x4()
+    self.pointerToTrackerTransformMatrix.SetElement( 0, 0, 1 ) # Row 1
+    self.pointerToTrackerTransformMatrix.SetElement( 0, 1, 0 )
+    self.pointerToTrackerTransformMatrix.SetElement( 0, 2, 0 )
+    self.pointerToTrackerTransformMatrix.SetElement( 0, 3, 18 )      
+    self.pointerToTrackerTransformMatrix.SetElement( 1, 0, 0 )  # Row 2
+    self.pointerToTrackerTransformMatrix.SetElement( 1, 1, 0.68 )
+    self.pointerToTrackerTransformMatrix.SetElement( 1, 2, -0.73 )
+    self.pointerToTrackerTransformMatrix.SetElement( 1, 3, -128.08 )       
+    self.pointerToTrackerTransformMatrix.SetElement( 2, 0, 0 )  # Row 3
+    self.pointerToTrackerTransformMatrix.SetElement( 2, 1, 0.73 )
+    self.pointerToTrackerTransformMatrix.SetElement( 2, 2, 0.68 )
+    self.pointerToTrackerTransformMatrix.SetElement( 2, 3, -51.30 )
+    self.pointerToTrackerTransform=slicer.vtkMRMLLinearTransformNode()
+    self.pointerToTrackerTransform.SetName("pointerToTrackerTransform")
+    self.pointerToTrackerTransform.SetMatrixTransformToParent(self.pointerToTrackerTransformMatrix)
+    slicer.mrmlScene.AddNode(self.pointerToTrackerTransform)
 
     # PointerTipToPointer transform selector
-    self.pointerTipToPointerSelector = slicer.qMRMLNodeComboBox()
-    self.pointerTipToPointerSelector.nodeTypes = ( ("vtkMRMLLinearTransformNode"), "" )
-    self.pointerTipToPointerSelector.selectNodeUponCreation = True
-    self.pointerTipToPointerSelector.addEnabled = False
-    self.pointerTipToPointerSelector.removeEnabled = False
-    self.pointerTipToPointerSelector.noneEnabled = False
-    self.pointerTipToPointerSelector.showHidden = False
-    self.pointerTipToPointerSelector.showChildNodeTypes = False
-    self.pointerTipToPointerSelector.setMRMLScene( slicer.mrmlScene )
-    self.pointerTipToPointerSelector.setToolTip( "Pick the PointerTipToPointer transform." )
-    parametersFormLayout.addRow("PointerTipToPointer transform: ", self.pointerTipToPointerSelector)
+    self.pointerTipToPointerTransformMatrix = vtk.vtkMatrix4x4()
+    self.pointerTipToPointerTransformMatrix.SetElement( 0, 0, 1 ) # Row 1
+    self.pointerTipToPointerTransformMatrix.SetElement( 0, 1, 0 )
+    self.pointerTipToPointerTransformMatrix.SetElement( 0, 2, 0 )
+    self.pointerTipToPointerTransformMatrix.SetElement( 0, 3, 0 )      
+    self.pointerTipToPointerTransformMatrix.SetElement( 1, 0, 0 )  # Row 2
+    self.pointerTipToPointerTransformMatrix.SetElement( 1, 1, 1 )
+    self.pointerTipToPointerTransformMatrix.SetElement( 1, 2, 0 )
+    self.pointerTipToPointerTransformMatrix.SetElement( 1, 3, 0 )       
+    self.pointerTipToPointerTransformMatrix.SetElement( 2, 0, 0 )  # Row 3
+    self.pointerTipToPointerTransformMatrix.SetElement( 2, 1, 0 )
+    self.pointerTipToPointerTransformMatrix.SetElement( 2, 2, 1 )
+    self.pointerTipToPointerTransformMatrix.SetElement( 2, 3, 0 )
+    self.pointerTipToPointerTransform=slicer.vtkMRMLLinearTransformNode()
+    self.pointerTipToPointerTransform.SetName("pointerTipToPointerTransform")
+    self.pointerTipToPointerTransform.SetMatrixTransformToParent(self.pointerTipToPointerTransformMatrix)
+    slicer.mrmlScene.AddNode(self.pointerTipToPointerTransform)
 
     # NeedleToTracker transform selector
-    self.needleToTrackerSelector = slicer.qMRMLNodeComboBox()
-    self.needleToTrackerSelector.nodeTypes = ( ("vtkMRMLLinearTransformNode"), "" )
-    self.needleToTrackerSelector.selectNodeUponCreation = True
-    self.needleToTrackerSelector.addEnabled = False
-    self.needleToTrackerSelector.removeEnabled = False
-    self.needleToTrackerSelector.noneEnabled = False
-    self.needleToTrackerSelector.showHidden = False
-    self.needleToTrackerSelector.showChildNodeTypes = False
-    self.needleToTrackerSelector.setMRMLScene( slicer.mrmlScene )
-    self.needleToTrackerSelector.setToolTip( "Pick the NeedleToTracker transform." )
-    parametersFormLayout.addRow("NeedleToTracker transform: ", self.needleToTrackerSelector)
+    self.needleToTrackerTransformMatrix = vtk.vtkMatrix4x4()
+    self.needleToTrackerTransformMatrix.SetElement( 0, 0, 1 ) # Row 1
+    self.needleToTrackerTransformMatrix.SetElement( 0, 1, 0 )
+    self.needleToTrackerTransformMatrix.SetElement( 0, 2, 0 )
+    self.needleToTrackerTransformMatrix.SetElement( 0, 3, 0 )      
+    self.needleToTrackerTransformMatrix.SetElement( 1, 0, 0 )  # Row 2
+    self.needleToTrackerTransformMatrix.SetElement( 1, 1, 0.9 )
+    self.needleToTrackerTransformMatrix.SetElement( 1, 2, -0.44 )
+    self.needleToTrackerTransformMatrix.SetElement( 1, 3, -17.08 )       
+    self.needleToTrackerTransformMatrix.SetElement( 2, 0, 0 )  # Row 3
+    self.needleToTrackerTransformMatrix.SetElement( 2, 1, 0.44 )
+    self.needleToTrackerTransformMatrix.SetElement( 2, 2, 0.9 )
+    self.needleToTrackerTransformMatrix.SetElement( 2, 3, -8.33 )
+    self.needleToTrackerTransform=slicer.vtkMRMLLinearTransformNode()
+    self.needleToTrackerTransform.SetName("needleToTrackerTransform")
+    self.needleToTrackerTransform.SetMatrixTransformToParent(self.needleToTrackerTransformMatrix)
+    slicer.mrmlScene.AddNode(self.needleToTrackerTransform)
 
     # NeedleTipToNeedle transform selector
-    self.needleTipToNeedleSelector = slicer.qMRMLNodeComboBox()
-    self.needleTipToNeedleSelector.nodeTypes = ( ("vtkMRMLLinearTransformNode"), "" )
-    self.needleTipToNeedleSelector.selectNodeUponCreation = True
-    self.needleTipToNeedleSelector.addEnabled = False
-    self.needleTipToNeedleSelector.removeEnabled = False
-    self.needleTipToNeedleSelector.noneEnabled = False
-    self.needleTipToNeedleSelector.showHidden = False
-    self.needleTipToNeedleSelector.showChildNodeTypes = False
-    self.needleTipToNeedleSelector.setMRMLScene( slicer.mrmlScene )
-    self.needleTipToNeedleSelector.setToolTip( "Pick the NeedleTipToNeedle transform." )
-    parametersFormLayout.addRow("NeedleTipToNeedle transform: ", self.needleTipToNeedleSelector)
-
-    # Apply Transforms For Registration Button
-    self.applyTransformsForRegistrationButton = qt.QPushButton("Apply Transforms For Registration")
-    self.applyTransformsForRegistrationButton.toolTip = "Apply selected transforms."
-    self.applyTransformsForRegistrationButton.enabled = False
-    parametersFormLayout.addRow(self.applyTransformsForRegistrationButton)
+    self.needleTipToNeedleTransformMatrix = vtk.vtkMatrix4x4()
+    self.needleTipToNeedleTransformMatrix.SetElement( 0, 0, 1 ) # Row 1
+    self.needleTipToNeedleTransformMatrix.SetElement( 0, 1, 0 )
+    self.needleTipToNeedleTransformMatrix.SetElement( 0, 2, 0 )
+    self.needleTipToNeedleTransformMatrix.SetElement( 0, 3, 0 )      
+    self.needleTipToNeedleTransformMatrix.SetElement( 1, 0, 0 )  # Row 2
+    self.needleTipToNeedleTransformMatrix.SetElement( 1, 1, 1 )
+    self.needleTipToNeedleTransformMatrix.SetElement( 1, 2, 0 )
+    self.needleTipToNeedleTransformMatrix.SetElement( 1, 3, 0 )       
+    self.needleTipToNeedleTransformMatrix.SetElement( 2, 0, 0 )  # Row 3
+    self.needleTipToNeedleTransformMatrix.SetElement( 2, 1, 0 )
+    self.needleTipToNeedleTransformMatrix.SetElement( 2, 2, 1 )
+    self.needleTipToNeedleTransformMatrix.SetElement( 2, 3, 0 )
+    self.needleTipToNeedleTransform=slicer.vtkMRMLLinearTransformNode()
+    self.needleTipToNeedleTransform.SetName("needleTipToNeedleTransform")
+    self.needleTipToNeedleTransform.SetMatrixTransformToParent(self.needleTipToNeedleTransformMatrix)
+    slicer.mrmlScene.AddNode(self.needleTipToNeedleTransform)
 
     # PatientToReference transform selector
-    self.patientToReferenceSelector = slicer.qMRMLNodeComboBox()
-    self.patientToReferenceSelector.nodeTypes = ( ("vtkMRMLLinearTransformNode"), "" )
-    self.patientToReferenceSelector.selectNodeUponCreation = True
-    self.patientToReferenceSelector.addEnabled = False
-    self.patientToReferenceSelector.removeEnabled = False
-    self.patientToReferenceSelector.noneEnabled = False
-    self.patientToReferenceSelector.showHidden = False
-    self.patientToReferenceSelector.showChildNodeTypes = False
-    self.patientToReferenceSelector.setMRMLScene( slicer.mrmlScene )
-    self.patientToReferenceSelector.setToolTip( "Pick the PatientToReference transform." )
-    parametersFormLayout.addRow("PatientToReference transform: ", self.patientToReferenceSelector)
+    self.patientToReferenceTransformMatrix = vtk.vtkMatrix4x4()
+    self.patientToReferenceTransformMatrix.SetElement( 0, 0, 1 ) # Row 1
+    self.patientToReferenceTransformMatrix.SetElement( 0, 1, 0 )
+    self.patientToReferenceTransformMatrix.SetElement( 0, 2, 0 )
+    self.patientToReferenceTransformMatrix.SetElement( 0, 3, 0 )      
+    self.patientToReferenceTransformMatrix.SetElement( 1, 0, 0 )  # Row 2
+    self.patientToReferenceTransformMatrix.SetElement( 1, 1, 1 )
+    self.patientToReferenceTransformMatrix.SetElement( 1, 2, 0 )
+    self.patientToReferenceTransformMatrix.SetElement( 1, 3, 0 )       
+    self.patientToReferenceTransformMatrix.SetElement( 2, 0, 0 )  # Row 3
+    self.patientToReferenceTransformMatrix.SetElement( 2, 1, 0 )
+    self.patientToReferenceTransformMatrix.SetElement( 2, 2, 1 )
+    self.patientToReferenceTransformMatrix.SetElement( 2, 3, 0 )
+    self.patientToReferenceTransform=slicer.vtkMRMLLinearTransformNode()
+    self.patientToReferenceTransform.SetName("patientToReferenceTransform")
+    self.patientToReferenceTransform.SetMatrixTransformToParent(self.patientToReferenceTransformMatrix)
+    slicer.mrmlScene.AddNode(self.patientToReferenceTransform)
 
     # Apply Transforms For Navigation Button
     self.applyTransformsForNavigationButton = qt.QPushButton("Apply Transforms For Navigation")
     self.applyTransformsForNavigationButton.toolTip = "Apply selected transforms."
-    self.applyTransformsForNavigationButton.enabled = False
+    self.applyTransformsForNavigationButton.enabled = True
     parametersFormLayout.addRow(self.applyTransformsForNavigationButton)
 
     # Navigation Area
@@ -176,14 +212,6 @@ class GuidedPunctureLIMWidget(ScriptedLoadableModuleWidget):
     parametersFormLayout.addRow(self.boneVisibilityButton)
 
     # connections
-    self.referenceToTrackerSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelectForRegistration)
-    self.trackerToReferenceSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelectForRegistration)
-    self.pointerToTrackerSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelectForRegistration)
-    self.pointerTipToPointerSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelectForRegistration)
-    self.needleToTrackerSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelectForRegistration)
-    self.needleTipToNeedleSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelectForRegistration)
-    self.applyTransformsForRegistrationButton.connect('clicked(bool)', self.onApplyTransformsForRegistrationClicked)
-    self.patientToReferenceSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelectForNavigation)
     self.applyTransformsForNavigationButton.connect('clicked(bool)', self.onApplyTransformsForNavigationClicked)
     self.softTissueVisibilityButton.connect('clicked(bool)', self.onSoftTissueVisibilityButtonClicked)
     self.boneVisibilityButton.connect('clicked(bool)', self.onBoneVisibilityButtonClicked)
@@ -224,30 +252,12 @@ class GuidedPunctureLIMWidget(ScriptedLoadableModuleWidget):
   def cleanup(self):
     pass
 
-  def onSelectForRegistration(self):
-    self.applyTransformsForRegistrationButton.enabled = self.referenceToTrackerSelector.currentNode() and self.trackerToReferenceSelector.currentNode() and self.pointerToTrackerSelector.currentNode() and self.pointerTipToPointerSelector.currentNode() and self.needleToTrackerSelector.currentNode() and self.needleTipToNeedleSelector.currentNode() 
-  
-  def onSelectForNavigation(self):
-    self.applyTransformsForNavigationButton.enabled = True
-
-  def onApplyTransformsForRegistrationClicked(self):
-    self.referenceToTrackerSelector.enabled = False
-    self.trackerToReferenceSelector.enabled = False
-    self.pointerToTrackerSelector.enabled = False
-    self.pointerTipToPointerSelector.enabled = False
-    self.needleToTrackerSelector.enabled = False
-    self.needleTipToNeedleSelector.enabled = False
-    self.applyTransformsForRegistrationButton.enabled = False
-    logic = GuidedPunctureLIMLogic()
-    logic.buildTransformTreeForRegistration(self.boneModel, self.softTissueModel, self.pointerModel, self.needleModel, self.trackerToReferenceSelector.currentNode(), self.pointerToTrackerSelector.currentNode(), self.pointerTipToPointerSelector.currentNode(), self.needleToTrackerSelector.currentNode(), self.needleTipToNeedleSelector.currentNode())
-  
   def onApplyTransformsForNavigationClicked(self):
-    self.patientToReferenceSelector.enabled = False
     self.applyTransformsForNavigationButton.enabled = False
     logic = GuidedPunctureLIMLogic()
     logic.resetTransformTree(self.boneModel, self.softTissueModel, self.pointerModel, self.needleModel)
-    logic.buildTransformTreeForNavigation(self.boneModel, self.softTissueModel, self.pointerModel, self.needleModel, self.referenceToTrackerSelector.currentNode(), self.pointerToTrackerSelector.currentNode(), self.pointerTipToPointerSelector.currentNode(), self.needleToTrackerSelector.currentNode(), self.needleTipToNeedleSelector.currentNode(),self.patientToReferenceSelector.currentNode())
-  
+    logic.buildTransformTreeForNavigation(self.boneModel, self.softTissueModel, self.pointerModel, self.needleModel, self.referenceToTrackerTransform, self.pointerToTrackerTransform, self.pointerTipToPointerTransform, self.needleToTrackerTransform, self.needleTipToNeedleTransform, self.patientToReferenceTransform)
+
   def onSoftTissueVisibilityButtonClicked(self):
     if self.softTissueVisibilityButtonState == 0:
           self.softTissueModelDisplay.VisibilityOff()
