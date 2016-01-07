@@ -305,6 +305,7 @@ class GuidedPunctureLIMWidget(ScriptedLoadableModuleWidget):
       logic.SetMembers(self.needleTipToNeedleTransform, self.needleToTrackerTransform)
       logic.addCalculateDistanceObserver()  
     elif not self.calculateDistanceButton.checked:        
+      logic = GuidedPunctureLIMLogic()
       logic.removeCalculateDistanceObserver()  
 #
 # GuidedPunctureLIMLogic
