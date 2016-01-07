@@ -3,6 +3,7 @@ import unittest
 import vtk, qt, ctk, slicer
 from slicer.ScriptedLoadableModule import *
 import logging
+import math
 
 #
 # GuidedPunctureLIM
@@ -211,10 +212,30 @@ class GuidedPunctureLIMWidget(ScriptedLoadableModuleWidget):
     self.boneVisibilityButton.setText(self.boneVisibilityButtonStateText0)
     parametersFormLayout.addRow(self.boneVisibilityButton)
 
+    # Target Fiducial selector
+    self.targetFiducialSelector = slicer.qMRMLNodeComboBox()
+    self.targetFiducialSelector.nodeTypes = ( ("vtkMRMLMarkupsFiducialNode"), "" )
+    self.targetFiducialSelector.selectNodeUponCreation = True
+    self.targetFiducialSelector.addEnabled = False
+    self.targetFiducialSelector.removeEnabled = False
+    self.targetFiducialSelector.noneEnabled = False
+    self.targetFiducialSelector.showHidden = False
+    self.targetFiducialSelector.showChildNodeTypes = False
+    self.targetFiducialSelector.setMRMLScene( slicer.mrmlScene )
+    self.targetFiducialSelector.setToolTip( "Pick the target fiducial." )
+    parametersFormLayout.addRow("Target Fiducial: ", self.targetFiducialSelector)
+
+    # Calculate Distance Button
+    self.calculateDistanceButton = qt.QPushButton("Calculate Distance")
+    self.calculateDistanceButton.enabled = True
+    self.calculateDistanceButton.checkable = True
+    parametersFormLayout.addRow(self.calculateDistanceButton)   
+
     # connections
     self.applyTransformsForNavigationButton.connect('clicked(bool)', self.onApplyTransformsForNavigationClicked)
     self.softTissueVisibilityButton.connect('clicked(bool)', self.onSoftTissueVisibilityButtonClicked)
     self.boneVisibilityButton.connect('clicked(bool)', self.onBoneVisibilityButtonClicked)
+    self.calculateDistanceButton.connect('clicked(bool)', self.onCalculateDistanceClicked)
     
     # Add vertical spacer
     self.layout.addStretch(1)
@@ -277,6 +298,14 @@ class GuidedPunctureLIMWidget(ScriptedLoadableModuleWidget):
           self.boneModelDisplay.VisibilityOn()
           self.boneVisibilityButtonState = 0
           self.boneVisibilityButton.setText(self.boneVisibilityButtonStateText0)
+
+  def onCalculateDistanceClicked(self):
+    if self.calculateDistanceButton.checked:    
+      logic = GuidedPunctureLIMLogic()
+      logic.SetMembers(self.needleTipToNeedleTransform, self.needleToTrackerTransform)
+      logic.addCalculateDistanceObserver()  
+    elif not self.calculateDistanceButton.checked:        
+      logic.removeCalculateDistanceObserver()  
 #
 # GuidedPunctureLIMLogic
 #
@@ -290,6 +319,82 @@ class GuidedPunctureLIMLogic(ScriptedLoadableModuleLogic):
   Uses ScriptedLoadableModuleLogic base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
+  def __init__(self):
+    
+    self.toolTipToTool = slicer.util.getNode('toolTipToTool')
+    if not self.toolTipToTool:
+      self.toolTipToTool=slicer.vtkMRMLLinearTransformNode()
+      self.toolTipToTool.SetName("toolTipToTool")
+      m = vtk.vtkMatrix4x4()
+      m.SetElement( 0, 0, 1 ) # Row 1
+      m.SetElement( 0, 1, 0 )
+      m.SetElement( 0, 2, 0 )
+      m.SetElement( 0, 3, 0 )      
+      m.SetElement( 1, 0, 0 )  # Row 2
+      m.SetElement( 1, 1, 1 )
+      m.SetElement( 1, 2, 0 )
+      m.SetElement( 1, 3, 0 )       
+      m.SetElement( 2, 0, 0 )  # Row 3
+      m.SetElement( 2, 1, 0 )
+      m.SetElement( 2, 2, 1 )
+      m.SetElement( 2, 3, 0 )
+      self.toolTipToTool.SetMatrixTransformToParent(m)
+      slicer.mrmlScene.AddNode(self.toolTipToTool)
+
+    self.toolToReference = slicer.util.getNode('toolToReference')
+    if not self.toolToReference:
+      self.toolToReference=slicer.vtkMRMLLinearTransformNode()
+      self.toolToReference.SetName("toolToReference")
+      self.toolToReference.SetMatrixTransformToParent(m)
+      slicer.mrmlScene.AddNode(self.toolToReference)
+   
+    self.tipFiducial = slicer.util.getNode('Tip')
+    if not self.tipFiducial:
+      self.tipFiducial = slicer.vtkMRMLMarkupsFiducialNode()  
+      self.tipFiducial.SetName('Tip')
+      self.tipFiducial.AddFiducial(0, 0, 0)
+      self.tipFiducial.SetNthFiducialLabel(0, '')
+      slicer.mrmlScene.AddNode(self.tipFiducial)
+      self.tipFiducial.SetDisplayVisibility(True)
+      self.tipFiducial.GetDisplayNode().SetGlyphType(1) # Vertex2D
+      self.tipFiducial.GetDisplayNode().SetTextScale(1.3)
+      self.tipFiducial.GetDisplayNode().SetSelectedColor(1,1,1)
+
+    self.targetFiducial = slicer.util.getNode('Target')
+    if not self.targetFiducial:
+      self.targetFiducial = slicer.vtkMRMLMarkupsFiducialNode()  
+      self.targetFiducial.SetName('Target')
+      self.targetFiducial.AddFiducial(0, 0, 0)
+      self.targetFiducial.SetNthFiducialLabel(0, '')
+      slicer.mrmlScene.AddNode(self.targetFiducial)
+      self.targetFiducial.SetDisplayVisibility(True)
+      self.targetFiducial.GetDisplayNode().SetGlyphType(1) # Vertex2D
+      self.targetFiducial.GetDisplayNode().SetTextScale(1.3)
+      self.targetFiducial.GetDisplayNode().SetSelectedColor(1,1,1)
+      
+    self.line = slicer.util.getNode('Line')
+    if not self.line:
+      self.line = slicer.vtkMRMLModelNode()
+      self.line.SetName('Line')
+      linePolyData = vtk.vtkPolyData()
+      self.line.SetAndObservePolyData(linePolyData)      
+      modelDisplay = slicer.vtkMRMLModelDisplayNode()
+      modelDisplay.SetSliceIntersectionVisibility(True)
+      modelDisplay.SetColor(0,1,0)
+      slicer.mrmlScene.AddNode(modelDisplay)      
+      self.line.SetAndObserveDisplayNodeID(modelDisplay.GetID())      
+      slicer.mrmlScene.AddNode(self.line)
+      
+    # VTK objects
+    self.transformPolyDataFilter = vtk.vtkTransformPolyDataFilter()
+    self.cellLocator = vtk.vtkCellLocator()
+    
+    # 3D View
+    threeDWidget = slicer.app.layoutManager().threeDWidget(0)
+    self.threeDView = threeDWidget.threeDView()
+    
+    self.callbackObserverTag = -1
+
   def buildTransformTreeForRegistration(self, boneModelNode, softTissueModelNode, pointerModelNode, needleModelNode, trackerToReferenceTransformNode, pointerToTrackerTransformNode, pointerTipToPointerTransformNode, needleToTrackerTransformNode, needleTipToNeedleTransformNode):
     # Pointer
     pointerModelNode.SetAndObserveTransformNodeID(pointerTipToPointerTransformNode.GetID())
@@ -321,8 +426,61 @@ class GuidedPunctureLIMLogic(ScriptedLoadableModuleLogic):
     pointerModelNode.SetAndObserveTransformNodeID(None)
     needleModelNode.SetAndObserveTransformNodeID(None)
 
+  def SetMembers(self, toolTipToTool, toolToReference):
+    self.toolTipToTool = toolTipToTool
+    self.toolToReference = toolToReference
+    
+  def addCalculateDistanceObserver(self):
+    print("[TEST] addCalculateDistanceObserver")
+    if self.callbackObserverTag == -1:
+      self.tipFiducial.SetAndObserveTransformNodeID(self.toolTipToTool.GetID())
+      self.callbackObserverTag = self.toolToReference.AddObserver('ModifiedEvent', self.calculateCallback(self.toolTipToTool)) # slicer.vtkMRMLMarkupsNode.MarkupAddedEvent
+      logging.info('addCalculateDistanceObserver')
 
+  def removeCalculateDistanceObserver(self):
+    print("[TEST] removeCalculateDistanceObserver")
+    if self.callbackObserverTag != -1:
+      self.toolToReference.RemoveObserver(self.callbackObserverTag)
+      self.callbackObserverTag = -1
+      logging.info('removeCalculateDistanceObserver')
+      
+  def calculateCallback(self, transformNode, event=None):
+    print("[TEST] calculateCallback")
+    self.calculateDistance()
 
+  def calculateDistance(self):
+    print("[TEST] calculateDistance")
+    tipPoint = [0.0,0.0,0.0]
+    targetPoint = [0.0, 0.0, 0.0]
+
+    m = vtk.vtkMatrix4x4()
+    self.toolTipToTool.GetMatrixTransformToWorld(m)
+    tipPoint[0] = m.GetElement(0, 3)
+    tipPoint[1] = m.GetElement(1, 3)
+    tipPoint[2] = m.GetElement(2, 3)
+
+    self.targetFiducial.GetNthFiducialPosition (1, targetPoint)        
+    
+    distance = math.sqrt(math.pow(tipPoint[0]-targetPoint[0], 2) + math.pow(tipPoint[1]-targetPoint[1], 2) + math.pow(tipPoint[2]-targetPoint[2], 2))
+    
+    self.drawLineBetweenPoints(tipPoint, targetPoint)
+    
+  def drawLineBetweenPoints(self, point1, point2):        
+    # Create a vtkPoints object and store the points in it
+    points = vtk.vtkPoints()
+    points.InsertNextPoint(point1)
+    points.InsertNextPoint(point2)
+
+    # Create line
+    line = vtk.vtkLine()
+    line.GetPointIds().SetId(0,0) 
+    line.GetPointIds().SetId(1,1)
+    lineCellArray = vtk.vtkCellArray()
+    lineCellArray.InsertNextCell(line)
+    
+    # Update model data
+    self.line.GetPolyData().SetPoints(points)
+    self.line.GetPolyData().SetLines(lineCellArray)
 
 
 class GuidedPunctureLIMTest(ScriptedLoadableModuleTest):
