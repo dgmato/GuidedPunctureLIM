@@ -276,7 +276,7 @@ class GuidedPunctureLIMWidget(ScriptedLoadableModuleWidget):
   def onApplyTransformsForNavigationClicked(self):
     self.applyTransformsForNavigationButton.enabled = False
     logic = GuidedPunctureLIMLogic()
-    logic.resetTransformTree(self.boneModel, self.softTissueModel, self.pointerModel, self.needleModel)
+    logic.resetTransformTree(self.boneModel, self.softTissueModel, self.pointerModel, self.needleModel, self.pointerToTrackerTransform)
     logic.buildTransformTreeForNavigation(self.boneModel, self.softTissueModel, self.pointerModel, self.needleModel, self.referenceToTrackerTransform, self.pointerToTrackerTransform, self.pointerTipToPointerTransform, self.needleToTrackerTransform, self.needleTipToNeedleTransform, self.patientToReferenceTransform)
 
   def onSoftTissueVisibilityButtonClicked(self):
@@ -348,7 +348,7 @@ class GuidedPunctureLIMLogic(ScriptedLoadableModuleLogic):
       self.toolToReference.SetName("toolToReference")
       self.toolToReference.SetMatrixTransformToParent(m)
       slicer.mrmlScene.AddNode(self.toolToReference)
-   
+
     self.tipFiducial = slicer.util.getNode('Tip')
     if not self.tipFiducial:
       self.tipFiducial = slicer.vtkMRMLMarkupsFiducialNode()  
@@ -420,12 +420,13 @@ class GuidedPunctureLIMLogic(ScriptedLoadableModuleLogic):
     softTissueModelNode.SetAndObserveTransformNodeID(patientToReferenceTransformNode.GetID())
     patientToReferenceTransformNode.SetAndObserveTransformNodeID(referenceToTrackerTransformNode.GetID())
 
-  def resetTransformTree(self, boneModelNode, softTissueModelNode, pointerModelNode, needleModelNode):
+  def resetTransformTree(self, boneModelNode, softTissueModelNode, pointerModelNode, needleModelNode, pointerToTrackerTransformNode):
      # Reset transform tree
     pointerModelNode.SetAndObserveTransformNodeID(None)
     needleModelNode.SetAndObserveTransformNodeID(None)
     pointerModelNode.SetAndObserveTransformNodeID(None)
     needleModelNode.SetAndObserveTransformNodeID(None)
+    pointerToTrackerTransformNode.SetAndObserveTransformNodeID(None)
 
   def SetMembers(self, toolTipToTool, toolToReference):
     self.toolTipToTool = toolTipToTool
