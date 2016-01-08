@@ -307,6 +307,7 @@ class GuidedPunctureLIMWidget(ScriptedLoadableModuleWidget):
     elif not self.calculateDistanceButton.checked:        
       logic = GuidedPunctureLIMLogic()
       logic.removeCalculateDistanceObserver()  
+
 #
 # GuidedPunctureLIMLogic
 #
@@ -436,7 +437,7 @@ class GuidedPunctureLIMLogic(ScriptedLoadableModuleLogic):
     print("[TEST] addCalculateDistanceObserver")
     if self.callbackObserverTag == -1:
       self.tipFiducial.SetAndObserveTransformNodeID(self.toolTipToTool.GetID())
-      self.callbackObserverTag = self.toolToReference.AddObserver('ModifiedEvent', self.calculateCallback(self.toolTipToTool)) # slicer.vtkMRMLMarkupsNode.MarkupAddedEvent
+      self.callbackObserverTag = self.toolToReference.AddObserver('ModifiedEvent', self.calculateCallback) # slicer.vtkMRMLMarkupsNode.MarkupAddedEvent
       logging.info('addCalculateDistanceObserver')
 
   def removeCalculateDistanceObserver(self):
